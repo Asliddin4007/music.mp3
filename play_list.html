@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>playoff — Siz soʻragan qo‘shiqlar bilan</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#121212;--panel:#0f0f0f;--muted:#b3b3b3;--accent:#1db954;--card:#181818;--glass:rgba(255,255,255,0.03)}
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:"Poppins",sans-serif;background:linear-gradient(180deg,var(--bg),#0a0a0a);color:#fff}
+  .app{display:grid;grid-template-columns:240px 1fr;grid-template-rows:calc(100vh - 84px)84px;min-height:100vh}
+  .sidebar{background:linear-gradient(180deg,var(--panel),#0b0b0b);padding:18px;border-right:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column;gap:14px}
+  .brand{font-weight:700;font-size:20px;color:var(--accent);display:flex;align-items:center;gap:10px}
+  .nav{margin-top:8px;display:flex;flex-direction:column;gap:8px}
+  .nav button{background:transparent;border:0;color:var(--muted);padding:8px;border-radius:8px;cursor:pointer;font-weight:600}
+  .nav button:hover{background:var(--glass);color:#fff}
+  .playlist-list{margin-top:12px;overflow:auto;padding-right:6px}
+  .playlist-item{color:var(--muted);padding:6px 8px;border-radius:6px;font-size:14px;cursor:pointer}
+  .main{padding:20px;overflow:auto}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+  .search{flex:1;max-width:520px;display:flex;gap:8px;align-items:center;background:var(--card);padding:8px 12px;border-radius:12px}
+  .search input{flex:1;background:transparent;border:0;outline:none;color:#fff;font-size:14px}
+  .content-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}
+  .card{background:linear-gradient(180deg,var(--card),#161616);border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,0.6);display:flex;flex-direction:column;gap:10px;transition:transform .2s}
+  .card:hover{transform:translateY(-6px)}
+  .cover{width:100%;aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center}
+  .cover img{width:100%;height:100%;object-fit:cover}
+  .track-title{font-size:15px;font-weight:600}
+  .track-artist{font-size:13px;color:var(--muted)}
+  .card .actions{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .btn{border:0;padding:8px 12px;border-radius:999px;cursor:pointer;font-weight:600}
+  .btn-play{background:var(--accent);color:#000}
+  .btn-add{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.03)}
+  .nowplaying{grid-column:1/-1;background:linear-gradient(90deg,rgba(29,185,84,0.06),transparent);border-top:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;padding:12px 20px;gap:12px;position:relative;z-index:50;backdrop-filter:blur(6px)}
+  .np-left{display:flex;align-items:center;gap:12px;min-width:200px}
+  .np-cover{width:56px;height:56px;border-radius:8px;overflow:hidden}
+  .np-cover img{width:100%;height:100%;object-fit:cover}
+  .np-meta{display:flex;flex-direction:column}
+  .np-meta .title{font-weight:700}
+  .np-meta .artist{color:var(--muted);font-size:13px}
+  .np-controls{display:flex;align-items:center;gap:12px}
+  .np-controls button{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer}
+  .progress{width:420px;max-width:50%;display:flex;align-items:center;gap:8px;color:var(--muted)}
+  .progress input[type="range"]{appearance:none;width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:999px}
+  .progress input[type="range"]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 6px rgba(29,185,84,0.6)}
+  .np-right{display:flex;align-items:center;gap:12px;color:var(--muted)}
+  .volume{width:110px;display:flex;align-items:center;gap:8px}
+  .volume input[type="range"]{width:80px}
+  @media (max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto 1fr 84px}.sidebar{display:flex;flex-direction:row;gap:10px;overflow:auto;padding:10px}.nav{display:flex;flex-direction:row;gap:8px}.playlist-list{display:none}.topbar{flex-direction:column;align-items:flex-start;gap:12px}.progress{display:none}}
+  /* small helper */
+  .small{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">playoff</div>
+      <nav class="nav">
+        <button id="btn-home">Home</button>
+        <button id="btn-search">Search</button>
+        <button id="btn-your">Library</button>
+      </nav>
+      <div style="flex:1;display:flex;flex-direction:column">
+        <div style="margin-top:10px;color:var(--muted);font-size:13px">Playlists</div>
+        <div class="playlist-list" id="playlists"></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:14px">Made with ❤️ — Asliddin_400</div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <input id="searchInput" placeholder="Qo'shiq, artist yoki playlist qidiring..." />
+        </div>
+        <div style="display:flex;gap:12px;align-items:center">
+          <button class="btn" id="btn-create">+ New Playlist</button>
+          <div style="width:36px;height:36px;border-radius:18px;background:#333;display:flex;align-items:center;justify-content:center;color:var(--muted)">A</div>
+        </div>
+      </div>
+
+      <section class="content-grid" id="grid"></section>
+    </main>
+
+    <div class="nowplaying">
+      <div class="np-left">
+        <div class="np-cover"><img id="npCover" src="https://i.imgur.com/8Km9tLL.jpg" alt=""></div>
+        <div class="np-meta">
+          <div class="title" id="npTitle">—</div>
+          <div class="artist" id="npArtist">—</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:18px;flex:1;justify-content:center">
+        <div class="np-controls">
+          <button id="prev">⏮</button>
+          <button id="playPause" style="font-size:20px">▶</button>
+          <button id="next">⏭</button>
+        </div>
+
+        <div class="progress">
+          <span id="currentTime">0:00</span>
+          <input id="seek" type="range" min="0" max="100" value="0" />
+          <span id="duration">0:00</span>
+        </div>
+      </div>
+
+      <div class="np-right">
+        <div class="volume">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden file input used to upload local audio -->
+  <input id="fileInput" type="file" accept="audio/*" style="display:none" />
+
+<script>
+/* ====== Tracks requested by you (titles/artists) ======
+   Iltimos: pastdagi 'src' bo'sh — sizga qulay bo'lishi uchun
+   har bir trekga local fayl yoki audio URL qo'shish funksiyasi berdim.
+*/
+const tracks = [
+  { title: "Oxiri", artist: "Asl Wayne", cover: "https://picsum.photos/seed/asl/400", src: "materials/Asl_Wayne-Oxiri.mp3" },
+  { title: "3 oy", artist: "Gozlaring", cover: "https://picsum.photos/seed/goz/400", src: "materials/asl-wayne-3-oy_(uzhits.net).mp3" },
+  { title: "Vorony", artist: "Xchoni", cover: "https://picsum.photos/seed/vorony/400", src: "materials/Xcho - Вороны.mp3" },
+  { title: "Ballada", artist: "Xchoni", cover: "https://picsum.photos/seed/ballada/400", src: "" },
+  { title: "Mir na dvoix", artist: "Xchoni", cover: "https://picsum.photos/seed/mir/400", src: "" },
+  { title: "Hayot ayt", artist: "Shahzoda", cover: "https://picsum.photos/seed/shahzoda1/400", src: "" },
+  { title: "Shunchaki", artist: "Shahzoda", cover: "https://picsum.photos/seed/shahzoda2/400", src: "" },
+  { title: "Ket", artist: "Shahzoda", cover: "https://picsum.photos/seed/shahzoda3/400", src: "" },
+  { title: "I Got Love", artist: "Miyagi", cover: "https://picsum.photos/seed/miyagi1/400", src: "" },
+  { title: "Samaya", artist: "Miyagi", cover: "https://picsum.photos/seed/miyagi2/400", src: "" },
+  { title: "Hato", artist: "Shohrux", cover: "https://picsum.photos/seed/shohrux1/400", src: "" },
+  { title: "Chilparchin", artist: "Shohrux", cover: "https://picsum.photos/seed/shohrux2/400", src: "" },
+  { title: "Okean", artist: "Shohrux", cover: "https://picsum.photos/seed/shohrux3/400", src: "" },
+  { title: "Pure Love", artist: "Arash", cover: "https://picsum.photos/seed/arash1/400", src: "" },
+  { title: "Broken Angel", artist: "Arash", cover: "https://picsum.photos/seed/arash2/400", src: "" },
+  { title: "Temptation", artist: "Arash", cover: "https://picsum.photos/seed/arash3/400", src: "" }
+];
+
+/* ====== UI refs ====== */
+const grid = document.getElementById('grid');
+const fileInput = document.getElementById('fileInput');
+const audio = new Audio(); audio.crossOrigin = "anonymous";
+const npCover = document.getElementById('npCover');
+const npTitle = document.getElementById('npTitle');
+const npArtist = document.getElementById('npArtist');
+const playPauseBtn = document.getElementById('playPause');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const seek = document.getElementById('seek');
+const currentTimeEl = document.getElementById('currentTime');
+const durationEl = document.getElementById('duration');
+const vol = document.getElementById('vol');
+
+let currentIndex = 0;
+let library = tracks.slice(); // working copy
+let isPlaying = false;
+
+/* ====== Render UI ====== */
+function renderGrid(list){
+  grid.innerHTML = '';
+  list.forEach((t, i) => {
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="cover"><img src="${t.cover}" alt="${t.title}"></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="track-title">${t.title}</div>
+        <div class="track-artist">${t.artist}</div>
+        <div class="small" id="srcInfo-${i}">${t.src ? 'Source: set' : 'Source: — (boshqa manba qo‘shing)'}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <button class="btn btn-play" data-index="${i}">Play</button>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-add" data-index="${i}">Add source</button>
+          <button class="btn btn-add" data-index="${i}" style="padding:6px" title="Remove source">✖</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+
+  document.querySelectorAll('.btn-play').forEach(b=>{
+    b.onclick = e => {
+      const idx = parseInt(e.currentTarget.dataset.index);
+      if(!library[idx].src){ alert("Bu trek uchun audio manbasi yo'q — 'Add source' orqali fayl yoki URL qo'shing."); return; }
+      playByIndex(idx);
+    }
+  });
+
+  // Add/Remove source handlers
+  const addButtons = Array.from(document.querySelectorAll('.btn-add'));
+  addButtons.forEach(btn=>{
+    btn.onclick = async (e) => {
+      const idx = parseInt(e.currentTarget.dataset.index);
+      // If clicked the remove (last button) — detect by text content
+      if(e.currentTarget.textContent.trim() === '✖'){ library[idx].src = ''; document.getElementById(`srcInfo-${idx}`).textContent = 'Source: — (o‘chirildi)'; if(currentIndex===idx){ audio.pause(); npTitle.textContent='—'; npArtist.textContent='—'; npCover.src='https://i.imgur.com/8Km9tLL.jpg'; } return; }
+      // otherwise ask user to choose: upload or paste URL
+      const choice = prompt("Manbani tanlang: 1) local fayl yuklash — '1' deb yozing; 2) URL qo'shish — URLni bevosita yozing.\n\nMasalan: 1  yoki  https://example.com/track.mp3");
+      if(!choice) return;
+      if(choice.trim() === '1'){
+        // trigger hidden file input, and store index to handle selected file
+        fileInput.dataset.forIndex = idx;
+        fileInput.click();
+      } else {
+        const url = choice.trim();
+        // minimal validation
+        if(!url.startsWith('http')) { alert('Iltimos to‘g‘ri URL kiriting (http/https bilan boshlansin)'); return; }
+        library[idx].src = url;
+        document.getElementById(`srcInfo-${idx}`).textContent = 'Source: set (URL)';
+        // if currently playing this index, reload audio src
+        if(currentIndex === idx){
+          audio.src = library[idx].src;
+        }
+      }
+    }
+  });
+}
+
+/* handle local file selection */
+fileInput.onchange = (e) => {
+  const f = e.target.files[0];
+  const idx = parseInt(fileInput.dataset.forIndex);
+  if(!f) return;
+  const url = URL.createObjectURL(f);
+  library[idx].src = url;
+  document.getElementById(`srcInfo-${idx}`).textContent = `Source: local file (${f.name})`;
+  fileInput.value = '';
+};
+
+/* ====== Player controls ====== */
+function loadTrack(i){
+  currentIndex = i;
+  const t = library[i];
+  npCover.src = t.cover;
+  npTitle.textContent = t.title;
+  npArtist.textContent = t.artist;
+  if(t.src){ audio.src = t.src; }
+  else { audio.src = ''; }
+  seek.value = 0;
+  currentTimeEl.textContent = '0:00';
+  durationEl.textContent = '0:00';
+}
+
+function playByIndex(i){
+  loadTrack(i);
+  if(!audio.src){ alert("Trek manbasi yo'q — 'Add source' tugmasi orqali fayl yoki URL qo'shing."); return; }
+  audio.play().catch(err => { alert("Brauzer bu formatni o'ynata olmadi yoki cross-origin muammo bor. Agar local fayl bo'lsa, faylni qayta yuklang."); });
+}
+
+playPauseBtn.onclick = () => {
+  if(!audio.src){ alert("O'ynash uchun trek tanlang. (Play tugmasi bilan)") ; return; }
+  if(audio.paused) audio.play(); else audio.pause();
+};
+
+prevBtn.onclick = () => {
+  currentIndex = (currentIndex - 1 + library.length) % library.length;
+  if(!library[currentIndex].src){ loadTrack(currentIndex); alert("Avvalgi trek manbasi yo'q."); return; }
+  loadTrack(currentIndex); audio.play();
+};
+nextBtn.onclick = () => {
+  currentIndex = (currentIndex + 1) % library.length;
+  if(!library[currentIndex].src){ loadTrack(currentIndex); alert("Keyingi trek manbasi yo'q."); return; }
+  loadTrack(currentIndex); audio.play();
+};
+
+audio.onplay = () => playPauseBtn.textContent = '⏸';
+audio.onpause = () => playPauseBtn.textContent = '▶';
+audio.ontimeupdate = () => {
+  if(audio.duration){
+    const pct = (audio.currentTime / audio.duration) * 100;
+    seek.value = pct;
+    currentTimeEl.textContent = formatTime(audio.currentTime);
+    durationEl.textContent = formatTime(audio.duration);
+  }
+};
+audio.onended = () => { nextBtn.click(); };
+
+seek.oninput = (e) => {
+  if(audio.duration) audio.currentTime = (e.target.value/100)*audio.duration;
+};
+vol.oninput = (e) => { audio.volume = e.target.value; };
+
+/* ====== Helpers ====== */
+function formatTime(sec){ if(!sec||isNaN(sec)) return '0:00'; const s = Math.floor(sec%60).toString().padStart(2,'0'); const m = Math.floor(sec/60); return m + ':' + s; }
+
+/* ====== Search ====== */
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  const q = e.target.value.trim().toLowerCase();
+  if(!q) renderGrid(library);
+  else renderGrid(library.filter(t => t.title.toLowerCase().includes(q) || t.artist.toLowerCase().includes(q)));
+});
+
+/* ====== Init ====== */
+renderGrid(library);
+loadTrack(0);
+audio.volume = parseFloat(vol.value || 0.8);
+
+/* ====== Playlist create demo ====== */
+document.getElementById('btn-create').addEventListener('click', () => {
+  const name = prompt('Yangi playlist nomi:');
+  if(name){
+    const el = document.createElement('div');
+    el.className = 'playlist-item';
+    el.innerText = name;
+    el.onclick = () => alert(`${name} — demo playlist`);
+    document.getElementById('playlists').prepend(el);
+  }
+});
+</script>
+</body>
+</html>
